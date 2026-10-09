@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'MSR BROILERS') | Management System</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥚</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Cabinet+Grotesk:wght@500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('styles')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .swal2-container {
+            z-index: 100000 !important;
+        }
+    </style>
+    <!-- Chart.js for Dashboards -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Alpine.js for UI interactivity -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Tailwind CDN for instant styles without npm run dev -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                        cabinet: ['Cabinet Grotesk', 'sans-serif'],
+                        jetbrains: ['JetBrains Mono', 'monospace'],
+                    },
+                    animation: {
+                        blob: "blob 10s infinite",
+                    },
+                    keyframes: {
+                        blob: {
+                            "0%": { transform: "translate(0px, 0px) scale(1)" },
+                            "33%": { transform: "translate(30px, -50px) scale(1.1)" },
+                            "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
+                            "100%": { transform: "translate(0px, 0px) scale(1)" },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-zinc-50 text-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 transition-colors duration-300 font-sans antialiased selection:bg-emerald-500/30 selection:text-emerald-900 dark:selection:bg-emerald-500/30 dark:selection:text-emerald-100 flex flex-col">
+
+<div x-data="{ sidebarOpen: false }" class="flex h-screen overflow-hidden relative">
+    <!-- Overlay with Alpine Transition -->
+    <div x-show="sidebarOpen" 
+         x-transition:enter="transition-opacity ease-linear duration-300" 
+         x-transition:enter-start="opacity-0" 
+         x-transition:enter-end="opacity-100" 
+         x-transition:leave="transition-opacity ease-linear duration-300" 
+         x-transition:leave-start="opacity-100" 
+         x-transition:leave-end="opacity-0" 
+         class="fixed inset-0 z-40 bg-zinc-900/40 backdrop-blur-sm lg:hidden"
+         @click="sidebarOpen = false"></div>
+
+    @include('partials.sidebar')
+
+    <div class="flex min-w-0 flex-1 flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-950 transition-colors duration-300">
+        @include('partials.topbar')
+
+        <main class="app-content flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8 relative bg-gradient-to-br from-emerald-50/50 via-zinc-50/80 to-cyan-50/50 dark:from-emerald-950 dark:via-zinc-950 dark:to-cyan-950">
+            <!-- Glassmorphism Background Blobs -->
+            <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 flex justify-center items-center">
+                <div class="absolute top-0 -left-4 w-[500px] h-[500px] bg-emerald-300/40 dark:bg-emerald-800/30 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-100 animate-blob"></div>
+                <div class="absolute top-0 -right-4 w-[500px] h-[500px] bg-cyan-300/40 dark:bg-cyan-800/30 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-100 animate-blob" style="animation-delay: 2s;"></div>
+                <div class="absolute -bottom-32 left-20 w-[500px] h-[500px] bg-teal-300/40 dark:bg-teal-800/30 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-100 animate-blob" style="animation-delay: 4s;"></div>
+            </div>
+            
+            <div class="mx-auto w-full max-w-[1500px] relative z-10">
+                @yield('content')
+            </div>
+        </main>
+    </div>
+</div>
+
+<x-toast />
+@stack('scripts')
+<script>
+    // Global Helper to reset submit buttons if form submission is cancelled
+    window.resetSubmitButtons = function(form) {
+        if (!form) return;
+        const submitBtns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+        submitBtns.forEach(btn => {
+            btn.disabled = false;
+            btn.classList.remove('opacity-75', 'cursor-not-allowed');
+            if (btn.hasAttribute('data-original-content')) {
+                btn.innerHTML = btn.getAttribute('data-original-content');
+                btn.removeAttribute('data-original-content');
+            }
+        });
+    };
+
+    // Global Double-Submit Prevention for all forms
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('form').forEach(form => {
+            // Only apply to POST/PUT/DELETE forms, skip GET (search/filter forms)
+            const method = (form.getAttribute('method') || 'GET').toUpperCase();
+            if (method === 'GET') return;
+            
+            form.addEventListener('submit', function(e) {
+                if (e.defaultPrevented) return; // Skip if another listener cancelled submit (e.g. SweetAlert dialog)
+                if (!form.checkValidity()) return; // Let browser HTML5 validation happen
+                
+                const submitBtns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                submitBtns.forEach(btn => {
+                    if (btn.disabled) return;
+                    
+                    // Use setTimeout so the form data is collected before disabling
+                    setTimeout(() => {
+                        btn.disabled = true;
+                        btn.classList.add('opacity-75', 'cursor-not-allowed');
+                        
+                        // If it's a button, add spinner text
+                        if (btn.tagName === 'BUTTON' && !btn.hasAttribute('data-custom-loading')) {
+                            const originalContent = btn.innerHTML;
+                            btn.setAttribute('data-original-content', originalContent);
+                            btn.innerHTML = '<span class="material-symbols-rounded animate-spin text-[18px]">sync</span> Processing...';
+                        }
+                    }, 10);
+                });
+            });
+        });
+
+        // Prevent mouse wheel scroll from accidentally changing number input values
+        document.addEventListener('wheel', function(e) {
+            if (document.activeElement && document.activeElement.type === 'number') {
+                document.activeElement.blur();
+            }
+        }, { passive: true });
+    });
+</script>
+
+@if(session()->has('success'))
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: @json(session('success')),
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'OK',
+            timer: 4000,
+            timerProgressBar: true,
+            background: document.documentElement.classList.contains('dark') ? '#18181b' : '#ffffff',
+            color: document.documentElement.classList.contains('dark') ? '#f4f4f5' : '#18181b',
+        });
+    });
+</script>
+@endif
+
+@if(session()->has('error'))
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: @json(session('error')),
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'OK',
+            background: document.documentElement.classList.contains('dark') ? '#18181b' : '#ffffff',
+            color: document.documentElement.classList.contains('dark') ? '#f4f4f5' : '#18181b',
+        });
+    });
+</script>
+@endif
+
+@stack('modals')
+</body>
+</html>

@@ -1,0 +1,350 @@
+@import url('https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Emerald Scale */
+    --emerald-50: 236 253 245;
+    --emerald-100: 209 250 229;
+    --emerald-200: 167 243 208;
+    --emerald-300: 110 231 183;
+    --emerald-400: 52 211 153;
+    --emerald-500: 16 185 129;
+    --emerald-600: 5 150 105;
+    --emerald-700: 4 120 87;
+    --emerald-800: 6 95 70;
+    --emerald-900: 6 78 59;
+    --emerald-950: 2 44 34;
+
+    /* Zinc Scale */
+    --zinc-50: 250 250 250;
+    --zinc-100: 244 244 245;
+    --zinc-200: 228 228 231;
+    --zinc-300: 212 212 216;
+    --zinc-400: 161 161 170;
+    --zinc-500: 113 113 122;
+    --zinc-600: 82 82 91;
+    --zinc-700: 63 63 70;
+    --zinc-800: 39 39 42;
+    --zinc-900: 24 24 27;
+    --zinc-950: 9 9 11;
+
+    /* Shadcn defaults mapped to our scales */
+    --background: var(--zinc-50);
+    --foreground: var(--zinc-950);
+
+    --card: 0 0% 100%;
+    --card-foreground: var(--zinc-950);
+
+    --popover: 0 0% 100%;
+    --popover-foreground: var(--zinc-950);
+
+    --primary: var(--emerald-600);
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: var(--zinc-100);
+    --secondary-foreground: var(--zinc-900);
+
+    --muted: var(--zinc-100);
+    --muted-foreground: var(--zinc-500);
+
+    --accent: var(--zinc-100);
+    --accent-foreground: var(--zinc-900);
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: var(--zinc-50);
+
+    --border: var(--zinc-200);
+    --input: var(--zinc-200);
+    --ring: var(--emerald-600);
+
+    --radius: 1rem;
+
+    /* Semantic / Custom */
+    --cm-bg: hsl(var(--background));
+    --cm-card-bg: hsl(var(--card));
+    --cm-card-border: hsl(var(--border));
+    --cm-text-primary: hsl(var(--foreground));
+    --cm-text-secondary: hsl(var(--zinc-600));
+    --cm-text-muted: hsl(var(--muted-foreground));
+    --cm-accent-emerald: hsl(var(--emerald-500));
+    --cm-accent-emerald-hover: hsl(var(--emerald-600));
+    --cm-accent-emerald-light: hsl(var(--emerald-50));
+    
+    --brand-emerald: var(--emerald-500);
+    --brand-sky: 14 165 233;
+    --brand-amber: 245 158 11;
+    --brand-violet: 139 92 246;
+
+    /* Sidebar variables */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: var(--zinc-950);
+    --sidebar-primary: var(--emerald-600);
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: var(--zinc-100);
+    --sidebar-accent-foreground: var(--zinc-900);
+    --sidebar-border: var(--zinc-200);
+    --sidebar-ring: var(--emerald-600);
+  }
+
+  .dark {
+    --background: var(--zinc-950);
+    --foreground: var(--zinc-50);
+
+    --card: var(--zinc-950);
+    --card-foreground: var(--zinc-50);
+
+    --popover: var(--zinc-950);
+    --popover-foreground: var(--zinc-50);
+
+    --primary: var(--emerald-500);
+    --primary-foreground: var(--emerald-950);
+
+    --secondary: var(--zinc-800);
+    --secondary-foreground: var(--zinc-50);
+
+    --muted: var(--zinc-800);
+    --muted-foreground: var(--zinc-400);
+
+    --accent: var(--zinc-800);
+    --accent-foreground: var(--zinc-50);
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: var(--zinc-50);
+
+    --border: var(--zinc-800);
+    --input: var(--zinc-800);
+    --ring: var(--emerald-500);
+    
+    --cm-bg: hsl(var(--background));
+    --cm-card-bg: hsl(var(--card));
+    --cm-card-border: hsl(var(--border));
+    --cm-text-primary: hsl(var(--foreground));
+    --cm-text-secondary: hsl(var(--zinc-400));
+    --cm-text-muted: hsl(var(--muted-foreground));
+    --cm-accent-emerald: hsl(var(--emerald-500));
+    --cm-accent-emerald-hover: hsl(var(--emerald-400));
+    --cm-accent-emerald-light: rgb(var(--emerald-500) / 0.1);
+
+    --sidebar-background: var(--zinc-950);
+    --sidebar-foreground: var(--zinc-50);
+    --sidebar-primary: var(--emerald-500);
+    --sidebar-primary-foreground: var(--emerald-950);
+    --sidebar-accent: var(--zinc-800);
+    --sidebar-accent-foreground: var(--zinc-50);
+    --sidebar-border: var(--zinc-800);
+    --sidebar-ring: var(--emerald-500);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply bg-background;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background:
+      radial-gradient(circle at top left, rgb(var(--brand-emerald) / 0.14), transparent 34rem),
+      radial-gradient(circle at top right, rgb(var(--brand-sky) / 0.16), transparent 32rem),
+      linear-gradient(135deg, hsl(var(--zinc-50)) 0%, hsl(var(--zinc-100)) 100%);
+  }
+
+  .dark body {
+    background:
+      radial-gradient(circle at top left, rgb(var(--brand-emerald) / 0.22), transparent 34rem),
+      radial-gradient(circle at top right, rgb(var(--brand-violet) / 0.18), transparent 32rem),
+      linear-gradient(135deg, hsl(var(--zinc-950)) 0%, hsl(var(--zinc-900)) 100%);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-bold tracking-tight text-zinc-950 dark:text-zinc-50;
+  }
+
+  input, textarea, select {
+    @apply text-zinc-900 dark:text-zinc-50 placeholder:text-zinc-400 dark:placeholder:text-zinc-500;
+  }
+
+  .material-symbols-rounded {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'liga';
+  }
+}
+
+@layer components {
+  /* Common Buttons */
+  .btn-primary, .cm-btn-primary {
+    @apply inline-flex items-center gap-1.5 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border border-transparent rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 shadow-sm hover:opacity-85 no-underline;
+  }
+  .btn-primary--blue, .cm-btn-primary--blue {
+    @apply bg-blue-700 dark:bg-blue-600 text-white hover:bg-blue-800 dark:hover:bg-blue-700;
+  }
+  
+  .btn-ghost, .cm-btn-ghost {
+    @apply inline-flex items-center px-4 py-2 bg-transparent border border-transparent rounded-xl text-sm font-medium text-zinc-600 dark:text-zinc-400 transition-all duration-200 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 hover:border-zinc-200 dark:hover:border-zinc-700;
+  }
+
+  /* Cards */
+  .stat-card, .cm-stat-card {
+    @apply rounded-2xl border border-emerald-100 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/60 p-5 shadow-glass-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-float backdrop-blur-xl flex items-center gap-3;
+  }
+  .cm-stat-card--danger {
+    @apply border-red-200 dark:border-red-900/50;
+  }
+
+  .glass-card, .bento-item, .cm-actor-card {
+    @apply rounded-[20px] border border-white/40 dark:border-white/10 bg-white/40 dark:bg-zinc-900/40 shadow-glass backdrop-blur-[12px] p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-float;
+  }
+
+  /* Table Components */
+  .table-card, .cm-table-card {
+    @apply rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 shadow-glass-sm overflow-hidden backdrop-blur-xl;
+  }
+
+  .premium-table, .data-table, .cm-table {
+    @apply w-full text-sm border-collapse;
+  }
+
+  .premium-table thead tr, .data-table thead tr, .cm-table thead tr {
+    @apply border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-[11px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400;
+  }
+
+  .premium-table th, .premium-table td, .data-table th, .data-table td, .cm-table th, .cm-table td {
+    @apply px-4 py-3 align-middle;
+  }
+
+  .premium-table tbody tr, .data-table tbody tr, .cm-table tbody tr, .cm-tr {
+    @apply border-b border-zinc-100 dark:border-zinc-800/50 transition-colors last:border-0 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/50;
+  }
+
+  /* Badges & Identity */
+  .premium-badge {
+    @apply inline-flex items-center rounded-full border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 shadow-sm;
+  }
+
+  .cm-avatar {
+    @apply w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0;
+  }
+
+  /* Forms & Inputs */
+  .form-input, .cm-form-input, .cm-search-input, .cm-table-input, .cm-table-select {
+    @apply block w-full px-3 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none transition-all duration-200 shadow-sm focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/15 dark:focus:ring-emerald-400/15 font-sans;
+  }
+
+  .cm-form-label {
+    @apply block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-1.5;
+  }
+
+  /* Modals */
+  .modal-overlay, .cm-modal-overlay {
+    @apply fixed inset-0 z-[200] bg-zinc-950/40 backdrop-blur-sm flex items-start justify-center p-4 pt-[5vh] overflow-y-auto;
+  }
+
+  .modal-content, .cm-modal {
+    @apply w-full max-w-lg bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-float overflow-hidden;
+  }
+
+  .cm-modal-header {
+    @apply flex items-center justify-between p-5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50;
+  }
+
+  .cm-modal-body {
+    @apply p-5;
+  }
+
+  .cm-modal-footer {
+    @apply flex justify-end items-center gap-2 p-5 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50;
+  }
+
+  .cm-close-btn {
+    @apply w-7 h-7 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800 transition-colors;
+  }
+
+  /* Page Headers */
+  .page-header {
+    @apply mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between;
+  }
+  .page-title, .cm-page-title {
+    @apply text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-3xl;
+  }
+  .page-subtitle, .cm-page-sub {
+    @apply mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400;
+  }
+
+  /* Utility Components */
+  .cm-action-btn {
+    @apply w-8 h-8 inline-flex items-center justify-center border border-zinc-200 dark:border-zinc-700 rounded-lg bg-transparent cursor-pointer text-zinc-500 dark:text-zinc-400 transition-all hover:border-zinc-400 dark:hover:border-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800;
+  }
+  .cm-action-btn--edit {
+    @apply hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20;
+  }
+  .cm-action-btn--danger {
+    @apply hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20;
+  }
+  
+  .cm-empty {
+    @apply p-12 text-center;
+  }
+  .cm-empty-icon {
+    @apply w-12 h-12 rounded-xl bg-zinc-50 dark:bg-zinc-900 text-zinc-400 flex items-center justify-center mx-auto mb-3;
+  }
+}
+
+@layer utilities {
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)) 0%, theme('colors.blue.500') 100%);
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted) / 0.45) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.zinc.300') transparent;
+  }
+  .dark .custom-scrollbar {
+    scrollbar-color: theme('colors.zinc.700') transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-zinc-300 dark:bg-zinc-700;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
