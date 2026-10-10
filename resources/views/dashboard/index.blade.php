@@ -5,7 +5,10 @@
 <div class="animate-fade-in" x-data="{ showStats: false, showContent: false }" x-init="setTimeout(() => showStats = true, 100); setTimeout(() => showContent = true, 300)">
     
     {{-- Page Header --}}
-    <x-page-header title="Executive Dashboard" subtitle="Real-time overview of MSR BROILERS operations, financials, and inventory.">
+    @php
+        $tenantName = app(\App\Services\Tenancy\TenantContext::class)->getTenant()?->name ?? 'MSR BROILERS';
+    @endphp
+    <x-page-header title="Executive Dashboard" subtitle="Real-time overview of {{ $tenantName }} operations, financials, and inventory.">
         <x-slot name="actions">
             <x-button href="{{ route('reports.index') }}" variant="ghost" icon="download">
                 <x-slot name="icon">

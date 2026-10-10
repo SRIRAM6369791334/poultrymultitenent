@@ -33,9 +33,24 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // ✅ Gate bypass strictly reserved for Platform Super Admin
+        // ✅ Gate authorization rules for Multi-Tenant SaaS
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
-            return ($user->is_super_admin ?? false) ? true : null;
+            // 1. Platform Super Admin (MSR Broilers Owner) has universal bypass
+            if ($user->is_super_admin ?? false) {
+                return true;
+            }
+
+            // 2. SaaS Tenant Management abilities are STRICTLY reserved for Platform Super Admin
+            if (in_array($ability, ['manage-platform-tenants', 'create-tenants', 'resell-saas'])) {
+                return false;
+            }
+
+            // 3. Tenant Admin (Company MD / Business Admin) has 100% full operational access within their business
+            if ($user->hasRole('admin') || ($user->current_tenant_id && $user->tenants()->where('tenants.id', $user->current_tenant_id)->wherePivot('role', 'admin')->exists())) {
+                return true;
+            }
+
+            return null; // Sub-users (staff, accountants) evaluate granular Spatie permissions
         });
 
         // \Illuminate\Pagination\Paginator::useBootstrapFive();

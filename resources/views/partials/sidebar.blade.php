@@ -1,13 +1,24 @@
 @php
     $user = auth()->user();
-    $canAccess = function(array $item) use ($user) {
+    $activeTenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+    $brandName = $activeTenant ? $activeTenant->name : 'MSR BROILERS';
+
+    $isTenantAdmin = $user && (
+        ($user->is_super_admin ?? false) ||
+        $user->hasRole('admin') ||
+        ($activeTenant && $user->tenants()->where('tenants.id', $activeTenant->id)->wherePivot('role', 'admin')->exists()) ||
+        ($user->current_tenant_id && $user->tenants()->where('tenants.id', $user->current_tenant_id)->wherePivot('role', 'admin')->exists())
+    );
+
+    $canAccess = function(array $item) use ($user, $isTenantAdmin) {
         if (!empty($item['super_admin_only'])) {
             return (bool) ($user && ($user->is_super_admin ?? false));
         }
         if (!isset($item['permission'])) {
             return true;
         }
-        if ($user && $user->hasRole('admin')) {
+        // Tenant Admin (Company MD) has 100% full operational access to all business modules
+        if ($isTenantAdmin) {
             return true;
         }
         return $user && $user->can($item['permission']);
@@ -85,7 +96,7 @@
             <span class="material-symbols-rounded text-[24px]">egg</span>
         </div>
         <div class="flex min-w-0 flex-col justify-center">
-            <span class="text-xl font-cabinet font-bold tracking-tight text-zinc-900 dark:text-white leading-none">MSR BROILERS</span>
+            <span class="text-xl font-cabinet font-bold tracking-tight text-zinc-900 dark:text-white leading-none truncate max-w-[150px]" title="{{ $brandName }}">{{ $brandName }}</span>
             <span class="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Management</span>
         </div>
         <button class="ml-auto rounded-xl p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white lg:hidden focus:outline-none focus:ring-2 focus:ring-emerald-500/20"

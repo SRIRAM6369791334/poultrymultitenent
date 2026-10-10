@@ -30,3 +30,4 @@ Thumbs.db
 /scratch/
 ORIGINAL_REQUEST.md
 routes_list.txt
+/storage/framework/views/*.php
