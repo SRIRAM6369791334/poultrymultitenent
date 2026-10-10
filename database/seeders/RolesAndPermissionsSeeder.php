@@ -15,6 +15,10 @@ class RolesAndPermissionsSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
+        if (config('permission.teams', false) && function_exists('setPermissionsTeamId')) {
+            setPermissionsTeamId(1);
+        }
+
         // Create Permission Groups and Permissions
         $permissionGroups = [
             'Customers' => ['view customers', 'create customers', 'edit customers', 'delete customers', 'view customer bills', 'view customer payments', 'view customer emis'],

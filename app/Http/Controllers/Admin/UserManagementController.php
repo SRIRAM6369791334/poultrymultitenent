@@ -79,6 +79,8 @@ class UserManagementController extends Controller
 
     public function update(Request $request, User $user): RedirectResponse
     {
+        $this->authorizeUserAccess($user);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
@@ -101,6 +103,8 @@ class UserManagementController extends Controller
 
     public function toggleStatus(User $user): RedirectResponse
     {
+        $this->authorizeUserAccess($user);
+
         $user->is_active = !$user->is_active;
         $user->save();
 
@@ -111,6 +115,8 @@ class UserManagementController extends Controller
 
     public function destroy(User $user): RedirectResponse
     {
+        $this->authorizeUserAccess($user);
+
         if ($user->id === Auth::id()) {
             return back()->with('error', 'You cannot delete yourself.');
         }
@@ -120,6 +126,40 @@ class UserManagementController extends Controller
         ActivityLogger::log('Deleted User', 'UserManagement', $user->id);
 
         return back()->with('success', 'User deleted.');
+    }
+
+    protected function authorizeUserAccess(User $target): void
+    {
+        $authUser = Auth::user();
+        if (! $authUser) {
+            abort(401);
+        }
+
+        $isTargetSuperAdmin = (bool) ($target->is_super_admin ?? false) || ($target->email === 'admin@poultry.com');
+        $isAuthSuperAdmin = (bool) ($authUser->is_super_admin ?? false) || ($authUser->email === 'admin@poultry.com');
+
+        if ($isTargetSuperAdmin && ! $isAuthSuperAdmin) {
+            abort(403, 'Unauthorized to modify Platform Super Admin.');
+        }
+
+        if (! $isAuthSuperAdmin) {
+            $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+            $activeTenantId = $tenant?->id ?? $authUser->current_tenant_id;
+
+            if (! $activeTenantId) {
+                abort(403, 'Tenant context missing.');
+            }
+
+            $targetBelongsToTenant = ((int) $target->current_tenant_id === (int) $activeTenantId)
+                || \Illuminate\Support\Facades\DB::table('tenant_user')
+                    ->where('tenant_id', $activeTenantId)
+                    ->where('user_id', $target->id)
+                    ->exists();
+
+            if (! $targetBelongsToTenant) {
+                abort(403, 'Cannot access user from another tenant.');
+            }
+        }
     }
 
     public function activityLogs(): View

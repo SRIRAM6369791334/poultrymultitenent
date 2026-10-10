@@ -104,7 +104,13 @@ class Dealer extends Model
      */
     public function getDisplayedOutstandingAttribute(): float
     {
-        $unallocatedPayments = (float) $this->payments()->whereNull('day_load_entry_id')->sum('amount');
+        $unallocatedPayments = $this->relationLoaded('payments')
+            ? (float) $this->payments->filter(fn($p) => is_null($p->day_load_entry_id) && !str_starts_with($p->notes ?? '', 'EMI Payment'))->sum('amount')
+            : (float) $this->payments()->whereNull('day_load_entry_id')
+                ->where(function($q) {
+                    $q->whereNull('notes')->orWhere('notes', 'not like', 'EMI Payment%');
+                })->sum('amount');
+
         return (float) $this->pending_amount + $this->dayload_outstanding + $this->emi_outstanding - $unallocatedPayments;
     }
 

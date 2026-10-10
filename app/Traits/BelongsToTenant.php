@@ -18,10 +18,10 @@ trait BelongsToTenant
         // 1. Automatically scope all select, update, and delete queries to active tenant
         static::addGlobalScope(new TenantGlobalScope());
 
-        // 2. Automatically assign tenant_id on creating new records if not explicitly set
+        // 2. Automatically assign tenant_id on creating new records unconditionally when tenant context is active
         static::creating(function (Model $model) {
             $context = app(TenantContext::class);
-            if ($context->check() && empty($model->tenant_id)) {
+            if ($context->check()) {
                 $model->tenant_id = $context->getTenantId();
             }
         });

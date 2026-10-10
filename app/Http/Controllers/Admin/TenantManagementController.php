@@ -213,6 +213,41 @@ class TenantManagementController extends Controller
     }
 
     /**
+     * Display the specified business tenant.
+     */
+    public function show(Tenant $tenant): View
+    {
+        $this->authorizeSuperAdmin();
+
+        $tenant->load(['reseller', 'users'])->loadCount(['dealers', 'users']);
+
+        return view('admin.tenants.edit', [
+            'tenant' => $tenant,
+            'resellers' => Reseller::where('is_active', true)->orderBy('company_name')->get(),
+        ]);
+    }
+
+    /**
+     * Delete a business tenant.
+     */
+    public function destroy(Tenant $tenant): RedirectResponse
+    {
+        $this->authorizeSuperAdmin();
+
+        // Cannot delete Tenant #1 (MSR Broilers - Primary)
+        if ($tenant->id === 1) {
+            return back()->with('error', 'Cannot delete Primary Tenant #1 (MSR Broilers).');
+        }
+
+        $tenantName = $tenant->name;
+        $tenant->delete();
+
+        ActivityLogger::log('Deleted Business Tenant: ' . $tenantName, 'TenantManagement', $tenant->id);
+
+        return redirect()->route('admin.tenants.index')->with('success', "Business Tenant '{$tenantName}' deleted successfully.");
+    }
+
+    /**
      * Toggle active/suspended status of a business tenant.
      */
     public function toggleStatus(Tenant $tenant): RedirectResponse

@@ -17,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -27,6 +28,27 @@ class DayLoadBillingController extends Controller
         private DayLoadPaymentService $dayLoadPaymentService,
         private ExportService $exporter,
     ) {}
+
+    private function vendorExistsRule(): \Illuminate\Validation\Rules\Exists
+    {
+        $tenantId = app(\App\Services\Tenancy\TenantContext::class)->getTenantId();
+        $rule = Rule::exists('vendors', 'id');
+        return $tenantId ? $rule->where('tenant_id', $tenantId) : $rule;
+    }
+
+    private function dealerExistsRule(): \Illuminate\Validation\Rules\Exists
+    {
+        $tenantId = app(\App\Services\Tenancy\TenantContext::class)->getTenantId();
+        $rule = Rule::exists('dealers', 'id');
+        return $tenantId ? $rule->where('tenant_id', $tenantId) : $rule;
+    }
+
+    private function vendorAdvanceExistsRule(): \Illuminate\Validation\Rules\Exists
+    {
+        $tenantId = app(\App\Services\Tenancy\TenantContext::class)->getTenantId();
+        $rule = Rule::exists('vendor_advances', 'id');
+        return $tenantId ? $rule->where('tenant_id', $tenantId) : $rule;
+    }
 
     public function index(Request $request): View
     {
@@ -170,8 +192,8 @@ class DayLoadBillingController extends Controller
         $validated = $request->validate([
             'batch_id'             => 'nullable|exists:day_load_batches,id',
             'billing_date'         => 'required|date',
-            'vendor_id'            => 'required|exists:vendors,id',
-            'dealer_id'            => 'required|exists:dealers,id',
+            'vendor_id'            => ['required', $this->vendorExistsRule()],
+            'dealer_id'            => ['required', $this->dealerExistsRule()],
             'sort_order'           => 'nullable|integer|min:1',
             'paper_rate'           => 'required|numeric|min:0',
             'billing_rate'         => 'nullable|numeric|min:0',
@@ -181,7 +203,7 @@ class DayLoadBillingController extends Controller
             'empty_weight'         => 'required|numeric|min:0',
             'farm_weight'          => 'nullable|numeric|min:0',
             'remarks'              => 'nullable|string|max:255',
-            'vendor_advance_id'    => 'nullable|exists:vendor_advances,id',
+            'vendor_advance_id'    => ['nullable', $this->vendorAdvanceExistsRule()],
             'apply_advance_amount' => 'nullable|numeric|min:0',
         ]);
 
@@ -246,13 +268,13 @@ class DayLoadBillingController extends Controller
         $validated = $request->validate([
             'batch_id'             => 'nullable|exists:day_load_batches,id',
             'billing_date'         => 'required|date',
-            'vendor_id'            => 'required|exists:vendors,id',
+            'vendor_id'            => ['required', $this->vendorExistsRule()],
             'paper_rate'           => 'required|numeric|min:0',
             'billing_rate'         => 'nullable|numeric|min:0',
-            'vendor_advance_id'    => 'nullable|exists:vendor_advances,id',
+            'vendor_advance_id'    => ['nullable', $this->vendorAdvanceExistsRule()],
             'apply_advance_amount' => 'nullable|numeric|min:0',
             'dealers'              => 'required|array',
-            'dealers.*.dealer_id'    => 'required|exists:dealers,id',
+            'dealers.*.dealer_id'    => ['required', $this->dealerExistsRule()],
             'dealers.*.sort_order'   => 'nullable|integer|min:1',
             'dealers.*.customer_rate'=> 'nullable|numeric|min:0',
             'dealers.*.no_of_boxes'  => 'nullable|integer|min:0',
@@ -313,7 +335,7 @@ class DayLoadBillingController extends Controller
     public function applyAdvance(Request $request, DayLoadEntry $entry): RedirectResponse
     {
         $validated = $request->validate([
-            'vendor_advance_id' => 'required|exists:vendor_advances,id',
+            'vendor_advance_id' => ['required', $this->vendorAdvanceExistsRule()],
             'amount'            => 'required|numeric|min:0.01',
         ]);
 
@@ -409,8 +431,8 @@ class DayLoadBillingController extends Controller
     {
         $validated = $request->validate([
             'transfer_weight'      => 'required|numeric|min:0.01',
-            'target_dealer_id'     => 'required|exists:dealers,id',
-            'target_vendor_id'     => 'required|exists:vendors,id',
+            'target_dealer_id'     => ['required', $this->dealerExistsRule()],
+            'target_vendor_id'     => ['required', $this->vendorExistsRule()],
             'target_customer_rate' => 'nullable|numeric|min:0',
             'reason'               => 'required|string|max:255',
         ]);
@@ -425,8 +447,8 @@ class DayLoadBillingController extends Controller
     public function update(Request $request, DayLoadEntry $entry): RedirectResponse
     {
         $validated = $request->validate([
-            'vendor_id'     => 'required|exists:vendors,id',
-            'dealer_id'     => 'required|exists:dealers,id',
+            'vendor_id'     => ['required', $this->vendorExistsRule()],
+            'dealer_id'     => ['required', $this->dealerExistsRule()],
             'sort_order'    => 'nullable|integer|min:1',
             'paper_rate'    => 'required|numeric|min:0',
             'billing_rate'  => 'required|numeric|min:0',
@@ -624,7 +646,7 @@ class DayLoadBillingController extends Controller
     public function recordLumpSumDealerPayment(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'dealer_id'          => 'required|exists:dealers,id',
+            'dealer_id'          => ['required', $this->dealerExistsRule()],
             'date'               => 'required|date|before_or_equal:today',
             'cash_amount'        => 'required|numeric|min:0',
             'bank_amount'        => 'required|numeric|min:0',
@@ -891,7 +913,7 @@ class DayLoadBillingController extends Controller
     public function setVendorRates(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'vendor_id' => 'required|exists:vendors,id',
+            'vendor_id' => ['required', $this->vendorExistsRule()],
             'rates'     => 'required|array',
             'rates.*'   => 'required|numeric|min:0',
             'reason'    => 'required|string|max:255',
