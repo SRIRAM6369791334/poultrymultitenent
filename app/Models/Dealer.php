@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Dealer extends Model
 {
-    use HasFactory, SoftDeletes;
+    use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'tenant_id',
         'firm_name', 'sort_order', 'gst_number', 'location', 'contact_person', 'phone', 'route', 'route_id', 'pending_amount'
     ];
 
@@ -108,14 +111,16 @@ class Dealer extends Model
     protected static function booted()
     {
         static::created(function ($dealer) {
-            $users = \App\Models\User::all();
-            \Illuminate\Support\Facades\Notification::send($users, new \App\Notifications\ActivityNotification(
-                'New Dealer Added',
-                "Dealer {$dealer->firm_name} was registered.",
-                route('masters.dealers.show', $dealer->id),
-                'storefront',
-                'blue'
-            ));
+            $users = $dealer->tenant?->users ?: collect();
+            if ($users->isNotEmpty()) {
+                \Illuminate\Support\Facades\Notification::send($users, new \App\Notifications\ActivityNotification(
+                    'New Dealer Added',
+                    "Dealer {$dealer->firm_name} was registered.",
+                    route('masters.dealers.show', $dealer->id),
+                    'storefront',
+                    'blue'
+                ));
+            }
         });
     }
 }

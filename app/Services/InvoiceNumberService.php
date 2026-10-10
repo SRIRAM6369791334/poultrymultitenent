@@ -16,16 +16,22 @@ class InvoiceNumberService
      * @param string $table
      * @return string
      */
-    public function generateUnique(string $prefix, string $table): string
+    public function generateUnique(string $prefix, string $table, ?int $tenantId = null): string
     {
+        $tenantId = $tenantId ?? app(\App\Services\Tenancy\TenantContext::class)->getTenantId();
         $dateStr = now()->format('Ymd');
         $fullPrefix = $prefix . '-' . $dateStr . '-';
 
-        return DB::transaction(function () use ($fullPrefix, $table) {
-            // Get the latest invoice number for today using lockForUpdate
-            $latest = DB::table($table)
-                ->where('invoice_no', 'like', $fullPrefix . '%')
-                ->lockForUpdate()
+        return DB::transaction(function () use ($fullPrefix, $table, $tenantId) {
+            $query = DB::table($table)
+                ->where('invoice_no', 'like', $fullPrefix . '%');
+
+            if ($tenantId && \Illuminate\Support\Facades\Schema::hasColumn($table, 'tenant_id')) {
+                $query->where('tenant_id', $tenantId);
+            }
+
+            // Get the latest invoice number for today within active tenant using lockForUpdate
+            $latest = $query->lockForUpdate()
                 ->orderBy('invoice_no', 'desc')
                 ->first();
 

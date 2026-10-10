@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Vendor extends Model
 {
-    use HasFactory;
+    use BelongsToTenant, HasFactory;
     use SoftDeletes;
 
-    protected $fillable = ['firm_name', 'is_shop', 'gst_number', 'location', 'contact_person', 'phone', 'route', 'notes', 'pending_amount'];
+    protected $fillable = ['tenant_id', 'firm_name', 'is_shop', 'gst_number', 'location', 'contact_person', 'phone', 'route', 'notes', 'pending_amount'];
 
     protected $casts = [
         'is_shop'        => 'boolean',
@@ -99,14 +101,16 @@ class Vendor extends Model
     protected static function booted()
     {
         static::created(function ($vendor) {
-            $users = \App\Models\User::all();
-            \Illuminate\Support\Facades\Notification::send($users, new \App\Notifications\ActivityNotification(
-                'New Vendor Added',
-                "Vendor {$vendor->firm_name} was registered.",
-                route('masters.vendors.show', $vendor->id),
-                'local_shipping',
-                'amber'
-            ));
+            $users = $vendor->tenant?->users ?: collect();
+            if ($users->isNotEmpty()) {
+                \Illuminate\Support\Facades\Notification::send($users, new \App\Notifications\ActivityNotification(
+                    'New Vendor Added',
+                    "Vendor {$vendor->firm_name} was registered.",
+                    route('masters.vendors.show', $vendor->id),
+                    'local_shipping',
+                    'amber'
+                ));
+            }
         });
     }
 }

@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Emi extends Model
 {
-    use HasFactory;
+    use BelongsToTenant, HasFactory;
     protected $table = 'emis';
 
-    protected $fillable = ['loan_name', 'bank_name', 'amount', 'paid_amount', 'due_date', 'status', 'emi_type', 'entity_id'];
+    protected $fillable = ['tenant_id', 'loan_name', 'bank_name', 'amount', 'paid_amount', 'due_date', 'status', 'emi_type', 'entity_id'];
 
     protected $casts = [
         'due_date'    => 'date',

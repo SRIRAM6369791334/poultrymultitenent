@@ -128,13 +128,77 @@
          
         </div>
 
+        {{-- SaaS Multi-Tenant Switcher --}}
+        @php
+            $currentTenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+            $authUser = Auth::user();
+            $accessibleTenants = ($authUser && ($authUser->is_super_admin ?? false))
+                ? \App\Models\Tenant::where('is_active', true)->orderBy('name')->get()
+                : ($authUser ? $authUser->tenants()->where('tenants.is_active', true)->orderBy('name')->get() : collect());
+        @endphp
+
+        @if($currentTenant)
+            <div x-data="{ openTenantDropdown: false }" class="relative">
+                @if($authUser && (($authUser->is_super_admin ?? false) || $accessibleTenants->count() > 1))
+                    <button @click="openTenantDropdown = !openTenantDropdown" @click.away="openTenantDropdown = false"
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200 text-xs font-semibold hover:bg-emerald-100/50 dark:hover:bg-emerald-900/40 transition-colors">
+                        <span class="material-symbols-rounded text-sm text-emerald-600">domain</span>
+                        <span class="max-w-[130px] sm:max-w-[180px] truncate">{{ $currentTenant->name }}</span>
+                        @if($authUser->is_super_admin ?? false)
+                            <span class="px-1.5 py-0.5 text-[9px] bg-emerald-600 text-white rounded font-bold uppercase tracking-wider">Super</span>
+                        @endif
+                        <span class="material-symbols-rounded text-xs text-zinc-400">expand_more</span>
+                    </button>
+
+                    <div x-show="openTenantDropdown"
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+                         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-100"
+                         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 scale-95 -translate-y-1"
+                         class="absolute right-0 mt-2 w-64 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl overflow-hidden z-50 py-1"
+                         x-cloak>
+                        <div class="px-3 py-2 border-b border-zinc-100 dark:border-zinc-800 text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                            <span>Switch Business</span>
+                            @if($authUser->is_super_admin ?? false)
+                                <a href="{{ route('admin.tenants.index') }}" class="text-emerald-600 hover:underline">Manage All</a>
+                            @endif
+                        </div>
+                        <div class="max-h-60 overflow-y-auto py-1">
+                            @foreach($accessibleTenants as $t)
+                                <form action="{{ route('tenant.switch') }}" method="POST" class="m-0">
+                                    @csrf
+                                    <input type="hidden" name="tenant_id" value="{{ $t->id }}">
+                                    <button type="submit"
+                                            class="w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors {{ $currentTenant->id === $t->id ? 'font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20' : 'text-zinc-700 dark:text-zinc-300' }}">
+                                        <span class="truncate">{{ $t->name }}</span>
+                                        @if($currentTenant->id === $t->id)
+                                            <span class="material-symbols-rounded text-sm">check</span>
+                                        @endif
+                                    </button>
+                                </form>
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 text-xs font-semibold">
+                        <span class="material-symbols-rounded text-sm text-zinc-500">domain</span>
+                        <span class="max-w-[150px] truncate">{{ $currentTenant->name }}</span>
+                    </div>
+                @endif
+            </div>
+        @endif
+
         <div class="hidden h-6 w-px bg-zinc-200 dark:bg-zinc-800 sm:block"></div>
 
         {{-- User Profile --}}
         <div class="group flex cursor-pointer items-center gap-3 pl-2 rounded-2xl p-1 pr-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
             <div class="hidden text-right sm:block font-outfit">
                 <p class="text-sm font-bold leading-none tracking-tight text-zinc-900 dark:text-white">{{ Auth::user()->name ?? 'Admin' }}</p>
-                <p class="mt-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Administrator</p>
+                <p class="mt-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                    {{ (Auth::user()?->is_super_admin ?? false) ? 'Platform Super Admin' : 'Business Admin' }}
+                </p>
             </div>
             <x-avatar name="{{ Auth::user()->name ?? 'Admin' }}" size="md" class="group-hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]" />
         </div>

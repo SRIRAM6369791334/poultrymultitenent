@@ -16,7 +16,21 @@ class UserManagementController extends Controller
 {
     public function index(): View
     {
-        $users = User::with('roles')->orderBy('name')->get();
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+        $authUser = Auth::user();
+
+        if ($authUser && ($authUser->is_super_admin ?? false)) {
+            // If super admin has switched into a specific tenant, show that tenant's users; otherwise all
+            $users = $tenant 
+                ? $tenant->users()->with('roles')->orderBy('name')->get()
+                : User::with('roles')->orderBy('name')->get();
+        } else {
+            // Tenant Admin only sees users within their tenant
+            $users = $tenant 
+                ? $tenant->users()->with('roles')->orderBy('name')->get()
+                : collect();
+        }
+
         $roles = Role::orderBy('name')->get();
         $activityLogs = \App\Models\ActivityLog::with('user')->latest('timestamp')->take(10)->get();
         return view('admin.users.index', compact('users', 'roles', 'activityLogs'));
@@ -32,13 +46,28 @@ class UserManagementController extends Controller
             'role' => 'required|string|max:255',
         ]);
 
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+
         $user = User::create([
             'name' => $request->name,
             'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'is_active' => true,
+            'is_super_admin' => false,
+            'current_tenant_id' => $tenant?->id,
         ]);
+
+        if ($tenant) {
+            \Illuminate\Support\Facades\DB::table('tenant_user')->insert([
+                'tenant_id' => $tenant->id,
+                'user_id' => $user->id,
+                'role' => $request->role,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         $role = Role::firstOrCreate(['name' => $request->role, 'guard_name' => 'web']);
         $user->assignRole($role);

@@ -2,11 +2,16 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Model;
 
 class VendorAdvanceAdjustment extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
+        'tenant_id',
         'vendor_advance_id',
         'day_load_entry_id',
         'amount',

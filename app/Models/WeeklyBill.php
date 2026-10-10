@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,9 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WeeklyBill extends Model
 {
-    use HasFactory;
+    use BelongsToTenant, HasFactory;
     
     protected $fillable = [
+        'tenant_id',
         'dealer_id', 'period_start', 'period_end', 'invoice_no',
         'amount', 'gst_percentage', 'gst_amount', 'net_amount',
         'discount_percentage', 'discount_amount', 'status', 'payment_mode', 'bank_method',
@@ -92,14 +95,16 @@ class WeeklyBill extends Model
     protected static function booted()
     {
         static::created(function ($bill) {
-            $users = \App\Models\User::all();
-            \Illuminate\Support\Facades\Notification::send($users, new \App\Notifications\ActivityNotification(
-                'New Weekly Invoice',
-                "Weekly invoice {$bill->invoice_number} was generated.",
-                route('billing.weekly.show', $bill->id),
-                'receipt_long',
-                'purple'
-            ));
+            $users = $bill->tenant?->users ?: collect();
+            if ($users->isNotEmpty()) {
+                \Illuminate\Support\Facades\Notification::send($users, new \App\Notifications\ActivityNotification(
+                    'New Weekly Invoice',
+                    "Weekly invoice {$bill->invoice_no} was generated.",
+                    route('billing.weekly.show', $bill->id),
+                    'receipt_long',
+                    'purple'
+                ));
+            }
         });
     }
 }

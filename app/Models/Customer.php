@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Customer extends Model
 {
-    use HasFactory, SoftDeletes;
+    use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'tenant_id',
         'name', 'phone', 'address', 'gst_number', 'route', 'route_id', 'type', 'balance'
     ];
 
@@ -69,14 +72,16 @@ class Customer extends Model
     protected static function booted()
     {
         static::created(function ($customer) {
-            $users = \App\Models\User::all();
-            \Illuminate\Support\Facades\Notification::send($users, new \App\Notifications\ActivityNotification(
-                'New Customer Added',
-                "Customer {$customer->name} was registered.",
-                route('masters.customers.show', $customer->id),
-                'person',
-                'emerald'
-            ));
+            $users = $customer->tenant?->users ?: collect();
+            if ($users->isNotEmpty()) {
+                \Illuminate\Support\Facades\Notification::send($users, new \App\Notifications\ActivityNotification(
+                    'New Customer Added',
+                    "Customer {$customer->name} was registered.",
+                    route('masters.customers.show', $customer->id),
+                    'person',
+                    'emerald'
+                ));
+            }
         });
     }
 }

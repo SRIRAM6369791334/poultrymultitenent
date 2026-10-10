@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Driver extends Model
 {
-    protected $fillable = ['driver_name', 'phone', 'license_number'];
+    use BelongsToTenant;
+
+    protected $fillable = ['tenant_id', 'driver_name', 'phone', 'license_number'];
 
     public function routes()
     {

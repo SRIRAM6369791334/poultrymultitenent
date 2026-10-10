@@ -1,6 +1,9 @@
 @php
     $user = auth()->user();
     $canAccess = function(array $item) use ($user) {
+        if (!empty($item['super_admin_only'])) {
+            return (bool) ($user && ($user->is_super_admin ?? false));
+        }
         if (!isset($item['permission'])) {
             return true;
         }
@@ -39,6 +42,7 @@
         ['label' => 'Profit & Loss', 'icon' => 'show_chart', 'route' => 'profit.index', 'permission' => 'view profit dashboard'],
 
         ['header' => 'Administration', 'permission' => 'manage users'],
+        ['label' => 'Business Accounts (SaaS)', 'icon' => 'domain', 'route' => 'admin.tenants.index', 'super_admin_only' => true],
         ['label' => 'User Management', 'icon' => 'manage_accounts', 'route' => 'admin.users.index', 'permission' => 'manage users'],
         ['label' => 'Role Management', 'icon' => 'admin_panel_settings', 'route' => 'admin.roles.index', 'permission' => 'manage roles'],
         ['label' => 'Permissions', 'icon' => 'vpn_key', 'route' => 'admin.permissions.index', 'permission' => 'manage roles'],

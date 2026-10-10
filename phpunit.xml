@@ -11,6 +11,18 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <testsuite name="Tier1">
+            <directory>tests/Tier1</directory>
+        </testsuite>
+        <testsuite name="Tier2">
+            <directory>tests/Tier2</directory>
+        </testsuite>
+        <testsuite name="Tier3">
+            <directory>tests/Tier3</directory>
+        </testsuite>
+        <testsuite name="Tier4">
+            <directory>tests/Tier4</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

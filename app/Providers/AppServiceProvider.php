@@ -21,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
             \App\Repositories\Contracts\PurchaseRepositoryInterface::class,
             \App\Repositories\PurchaseRepository::class
         );
+
+        $this->app->singleton(\App\Services\Tenancy\TenantContext::class, function () {
+            return new \App\Services\Tenancy\TenantContext();
+        });
     }
 
 
@@ -29,9 +33,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // ✅ Gate bypass for admin role (Super Admin)
+        // ✅ Gate bypass strictly reserved for Platform Super Admin
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
-            return $user->hasRole('admin') ? true : null;
+            return ($user->is_super_admin ?? false) ? true : null;
         });
 
         // \Illuminate\Pagination\Paginator::useBootstrapFive();

@@ -8,13 +8,24 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles, HasApiTokens;
 
-    protected $fillable = ['name', 'email', 'password', 'phone', 'username', 'is_active'];
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'phone',
+        'username',
+        'is_active',
+        'current_tenant_id',
+        'is_super_admin',
+    ];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -24,12 +35,48 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'is_super_admin' => 'boolean',
         ];
     }
 
     public function activityLogs()
     {
         return $this->hasMany(ActivityLog::class);
+    }
+
+    /**
+     * Tenants that this user belongs to.
+     */
+    public function tenants(): BelongsToMany
+    {
+        return $this->belongsToMany(Tenant::class, 'tenant_user')
+            ->withPivot('role', 'is_active')
+            ->withTimestamps();
+    }
+
+    /**
+     * Active / currently selected tenant context.
+     */
+    public function currentTenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class, 'current_tenant_id');
+    }
+
+    /**
+     * Check if user is the platform super admin.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return (bool) $this->is_super_admin;
+    }
+
+    /**
+     * Check if user belongs to a given tenant.
+     */
+    public function belongsToTenant(int|Tenant $tenant): bool
+    {
+        $tenantId = $tenant instanceof Tenant ? $tenant->id : $tenant;
+        return $this->tenants()->where('tenants.id', $tenantId)->exists();
     }
 
     /**

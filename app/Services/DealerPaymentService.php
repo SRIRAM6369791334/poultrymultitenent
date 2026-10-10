@@ -20,6 +20,7 @@ class DealerPaymentService
     {
         return \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
             $dealer = Dealer::findOrFail($data['dealer_id']);
+            $data['tenant_id'] = $dealer->tenant_id;
             
             $cashAmount = isset($data['cash_amount']) ? (float) $data['cash_amount'] : 0.00;
             $bankAmount = isset($data['bank_amount']) ? (float) $data['bank_amount'] : 0.00;

@@ -2,14 +2,19 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Consumption extends Model
 {
+    use BelongsToTenant;
+
     protected $table = 'poultry_consumptions';
 
     protected $fillable = [
+        'tenant_id',
         'date',
         'batch_id',
         'item_id',

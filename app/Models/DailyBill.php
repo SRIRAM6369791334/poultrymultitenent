@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,9 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DailyBill extends Model
 {
-    use HasFactory;
+    use BelongsToTenant, HasFactory;
 
     protected $fillable = [
+        'tenant_id',
         'customer_id', 'dealer_id', 'date', 'date_from', 'date_to', 'amount', 'gst_percentage', 'gst_amount',
         'net_amount', 'discount_percentage', 'discount_amount', 'payment_mode', 'bank_method',
         'status', 'invoice_no', 'previous_outstanding', 'payments_during_day'
@@ -101,14 +104,16 @@ class DailyBill extends Model
     protected static function booted()
     {
         static::created(function ($bill) {
-            $users = \App\Models\User::all();
-            \Illuminate\Support\Facades\Notification::send($users, new \App\Notifications\ActivityNotification(
-                'New Daily Invoice',
-                "Daily invoice {$bill->invoice_number} was generated.",
-                route('billing.daily.invoice', $bill->id),
-                'receipt',
-                'violet'
-            ));
+            $users = $bill->tenant?->users ?: collect();
+            if ($users->isNotEmpty()) {
+                \Illuminate\Support\Facades\Notification::send($users, new \App\Notifications\ActivityNotification(
+                    'New Daily Invoice',
+                    "Daily invoice {$bill->invoice_no} was generated.",
+                    route('billing.daily.invoice', $bill->id),
+                    'receipt',
+                    'violet'
+                ));
+            }
         });
     }
 }

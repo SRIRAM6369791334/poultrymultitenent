@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,9 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Purchase extends Model
 {
-    use HasFactory;
+    use BelongsToTenant, HasFactory;
     
     protected $fillable = [
+        'tenant_id',
         'vendor_id', 'vendor_name', 'invoice_no', 'date', 'due_date', 'gst_percentage', 'gst_amount', 'total_amount', 'payment_mode',
     ];
 
@@ -90,14 +93,16 @@ class Purchase extends Model
     protected static function booted()
     {
         static::created(function ($purchase) {
-            $users = \App\Models\User::all();
-            \Illuminate\Support\Facades\Notification::send($users, new \App\Notifications\ActivityNotification(
-                'New Purchase Invoice',
-                "Purchase invoice {$purchase->invoice_no} was generated for {$purchase->vendor_name}.",
-                route('purchases.show', $purchase->id),
-                'shopping_cart',
-                'orange'
-            ));
+            $users = $purchase->tenant?->users ?: collect();
+            if ($users->isNotEmpty()) {
+                \Illuminate\Support\Facades\Notification::send($users, new \App\Notifications\ActivityNotification(
+                    'New Purchase Invoice',
+                    "Purchase invoice {$purchase->invoice_no} was generated for {$purchase->vendor_name}.",
+                    route('purchases.show', $purchase->id),
+                    'shopping_cart',
+                    'orange'
+                ));
+            }
         });
     }
 }

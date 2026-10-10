@@ -17,11 +17,17 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission'         => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'api.limit'          => \App\Http\Middleware\ApiRateLimitMiddleware::class,
+            'tenant'             => \App\Http\Middleware\ResolveTenantContext::class,
+        ]);
+
+        $middleware->appendToGroup('web', [
+            \App\Http\Middleware\ResolveTenantContext::class,
         ]);
 
         // ✅ Security Headers applied globally to all API responses
         $middleware->appendToGroup('api', [
             \App\Http\Middleware\SecurityHeadersMiddleware::class,
+            \App\Http\Middleware\ResolveTenantContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
