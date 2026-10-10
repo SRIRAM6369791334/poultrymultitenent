@@ -34,23 +34,70 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // ✅ Gate authorization rules for Multi-Tenant SaaS
-        \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
-            // 1. Platform Super Admin (MSR Broilers Owner) has universal bypass
-            if ($user->is_super_admin ?? false) {
-                return true;
-            }
-
-            // 2. SaaS Tenant Management abilities are STRICTLY reserved for Platform Super Admin
-            if (in_array($ability, ['manage-platform-tenants', 'create-tenants', 'resell-saas'])) {
+        \Illuminate\Support\Facades\Gate::before(function ($user, $ability, $arguments = []) {
+            if (! $user) {
                 return false;
             }
 
-            // 3. Tenant Admin (Company MD / Business Admin) has 100% full operational access within their business
-            if ($user->isTenantAdmin()) {
+            // a. Platform Super Admin (MSR Broilers Owner) universal bypass
+            $isSuperAdmin = (bool) ($user->is_super_admin ?? false)
+                || ($user->email ?? null) === 'admin@poultry.com'
+                || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin());
+
+            if ($isSuperAdmin) {
                 return true;
             }
 
-            return null; // Sub-users (staff, accountants) evaluate granular Spatie permissions
+            // b. Platform Super Admin ability blacklist: explicitly return false for non-super admins
+            $platformSuperAdminAbilities = [
+                'manage-platform-tenants',
+                'create-tenants',
+                'resell-saas',
+                'manage-tenants',
+                'manage-resellers',
+                'manage-platform-settings',
+                'system-level-override',
+                'platform-admin',
+            ];
+
+            if (in_array($ability, $platformSuperAdminAbilities, true)) {
+                return false;
+            }
+
+            // Prevent non-super-admins from mutating or deleting Platform Super Admin accounts
+            if (in_array($ability, ['delete', 'update', 'toggleStatus'], true) && isset($arguments[0]) && $arguments[0] instanceof \App\Models\User) {
+                $target = $arguments[0];
+                if ((bool) ($target->is_super_admin ?? false) || ($target->email ?? null) === 'admin@poultry.com') {
+                    return false;
+                }
+            }
+
+            // c. Resolve active tenant context & synchronize Spatie setPermissionsTeamId()
+            $activeTenantId = null;
+            if (class_exists(\App\Services\Tenancy\TenantContext::class)) {
+                $activeTenantId = app(\App\Services\Tenancy\TenantContext::class)->getTenantId();
+            }
+            $activeTenantId ??= $user->current_tenant_id;
+            if (! $activeTenantId && session()->has('active_tenant_id')) {
+                $activeTenantId = session('active_tenant_id');
+            }
+
+            if ($activeTenantId && function_exists('setPermissionsTeamId') && function_exists('getPermissionsTeamId')) {
+                if (getPermissionsTeamId() !== (int) $activeTenantId) {
+                    setPermissionsTeamId((int) $activeTenantId);
+                    if (method_exists($user, 'relationLoaded') && $user->relationLoaded('roles')) {
+                        $user->unsetRelation('roles');
+                    }
+                }
+            }
+
+            // Tenant Admin operational access (100% full operational access within active tenant)
+            if (method_exists($user, 'isTenantAdmin') && $user->isTenantAdmin($activeTenantId)) {
+                return true;
+            }
+
+            // d. Sub-users (staff, accountants): return null so granular Spatie permissions apply
+            return null;
         });
 
         // \Illuminate\Pagination\Paginator::useBootstrapFive();

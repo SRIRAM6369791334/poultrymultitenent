@@ -1,9 +1,9 @@
 @php
     $user = auth()->user();
     $activeTenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
-    $brandName = $activeTenant ? $activeTenant->name : 'MSR BROILERS';
+    $brandName = $activeTenant ? ($activeTenant->company_name ?: $activeTenant->name) : 'MSR BROILERS';
 
-    $isTenantAdmin = (bool) ($user && method_exists($user, 'isTenantAdmin') && $user->isTenantAdmin($activeTenant));
+    $isTenantAdmin = (bool) ($user && method_exists($user, 'isTenantAdmin') && $user->isTenantAdmin());
 
     $canAccess = function(array $item) use ($user, $isTenantAdmin) {
         if (!empty($item['super_admin_only'])) {
@@ -16,7 +16,7 @@
         if ($isTenantAdmin) {
             return true;
         }
-        return $user && $user->can($item['permission']);
+        return (bool) ($user && $user->can($item['permission']));
     };
     $routeExists = fn(string $routeName) => \Illuminate\Support\Facades\Route::has($routeName);
 
@@ -46,6 +46,7 @@
         
         ['header' => 'Performance'],
         ['label' => 'Profit & Loss', 'icon' => 'show_chart', 'route' => 'profit.index', 'permission' => 'view profit dashboard'],
+        ['label' => 'Reports', 'icon' => 'analytics', 'route' => 'reports.index', 'permission' => 'view reports'],
 
         ['header' => 'Administration', 'permission' => 'manage users'],
         ['label' => 'Business Accounts (SaaS)', 'icon' => 'domain', 'route' => 'admin.tenants.index', 'super_admin_only' => true],
@@ -130,7 +131,7 @@
             
             <div class="flex min-w-0 flex-col font-outfit">
                 <span class="truncate text-sm font-bold tracking-tight text-zinc-900 dark:text-white">{{ $user?->name ?? 'Admin' }}</span>
-                <span class="truncate text-[10px] font-medium text-zinc-500 dark:text-zinc-400">{{ $user?->email ?? 'admin@MSR BROILERS.com' }}</span>
+                <span class="truncate text-[10px] font-medium text-zinc-500 dark:text-zinc-400">{{ $user?->email ?? '' }}</span>
             </div>
             
             <form method="POST" action="{{ route('logout') }}" class="ml-auto shrink-0">
