@@ -80,6 +80,33 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is a tenant administrator (Company MD / Business Admin).
+     */
+    public function isTenantAdmin(?Tenant $tenant = null): bool
+    {
+        if ($this->is_super_admin) {
+            return true;
+        }
+
+        if ($this->hasRole('admin')) {
+            return true;
+        }
+
+        $tenantId = $tenant?->id 
+            ?? app(\App\Services\Tenancy\TenantContext::class)->getTenantId() 
+            ?? $this->current_tenant_id;
+
+        if (! $tenantId) {
+            return false;
+        }
+
+        return $this->tenants()
+            ->where('tenants.id', $tenantId)
+            ->wherePivot('role', 'admin')
+            ->exists();
+    }
+
+    /**
      * Get the highest role level for the user.
      */
     public function getRoleLevel(): int

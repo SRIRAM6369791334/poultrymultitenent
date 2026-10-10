@@ -6,12 +6,41 @@ $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
 $user = \App\Models\User::where('email', 'like', '%demo%')->orWhere('id', 70)->first();
-echo "Testing User: {$user->name} ({$user->email}), is_super_admin: " . ($user->is_super_admin ? 'YES' : 'NO') . PHP_EOL;
-
-auth()->login($user);
+if (!$user) {
+    $user = \App\Models\User::create([
+        'name' => 'Demo MD',
+        'username' => 'demo_md',
+        'email' => 'demo@gmail.com',
+        'password' => \Illuminate\Support\Facades\Hash::make('password'),
+        'is_active' => true,
+        'is_super_admin' => false,
+    ]);
+}
 
 $tenant = $user->tenants()->first();
+if (!$tenant) {
+    $tenant = \App\Models\Tenant::firstOrCreate(
+        ['slug' => 'demo-poultry'],
+        [
+            'name' => 'Demo Poultry Farm',
+            'company_name' => 'Demo Poultry Farm',
+            'email' => 'demo@gmail.com',
+            'is_active' => true,
+        ]
+    );
+    $user->current_tenant_id = $tenant->id;
+    $user->save();
+    \Illuminate\Support\Facades\DB::table('tenant_user')->updateOrInsert(
+        ['tenant_id' => $tenant->id, 'user_id' => $user->id],
+        ['role' => 'admin', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]
+    );
+    $user->load('tenants');
+}
+
+echo "Testing User: {$user->name} ({$user->email}), is_super_admin: " . ($user->is_super_admin ? 'YES' : 'NO') . PHP_EOL;
 echo "Active Tenant: {$tenant->name} (ID: {$tenant->id})" . PHP_EOL;
+
+auth()->login($user);
 
 app(\App\Services\Tenancy\TenantContext::class)->setTenant($tenant);
 if (function_exists('setPermissionsTeamId')) {

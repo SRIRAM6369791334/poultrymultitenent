@@ -3,12 +3,7 @@
     $activeTenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
     $brandName = $activeTenant ? $activeTenant->name : 'MSR BROILERS';
 
-    $isTenantAdmin = $user && (
-        ($user->is_super_admin ?? false) ||
-        $user->hasRole('admin') ||
-        ($activeTenant && $user->tenants()->where('tenants.id', $activeTenant->id)->wherePivot('role', 'admin')->exists()) ||
-        ($user->current_tenant_id && $user->tenants()->where('tenants.id', $user->current_tenant_id)->wherePivot('role', 'admin')->exists())
-    );
+    $isTenantAdmin = (bool) ($user && method_exists($user, 'isTenantAdmin') && $user->isTenantAdmin($activeTenant));
 
     $canAccess = function(array $item) use ($user, $isTenantAdmin) {
         if (!empty($item['super_admin_only'])) {

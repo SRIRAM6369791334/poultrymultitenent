@@ -46,7 +46,7 @@ class AppServiceProvider extends ServiceProvider
             }
 
             // 3. Tenant Admin (Company MD / Business Admin) has 100% full operational access within their business
-            if ($user->hasRole('admin') || ($user->current_tenant_id && $user->tenants()->where('tenants.id', $user->current_tenant_id)->wherePivot('role', 'admin')->exists())) {
+            if ($user->isTenantAdmin()) {
                 return true;
             }
 
