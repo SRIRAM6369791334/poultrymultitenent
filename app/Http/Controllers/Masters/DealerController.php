@@ -97,6 +97,20 @@ class DealerController extends Controller
 
     public function destroy(Dealer $dealer): RedirectResponse
     {
+        $hasTransactions = $dealer->dayLoadEntries()->exists()
+            || $dealer->payments()->exists()
+            || (method_exists($dealer, 'dealerPayments') && $dealer->dealerPayments()->exists())
+            || \App\Models\DealerPayment::where('dealer_id', $dealer->id)->exists()
+            || (method_exists($dealer, 'dailyBills') && $dealer->dailyBills()->exists())
+            || \App\Models\DailyBill::where('dealer_id', $dealer->id)->exists()
+            || $dealer->dealerPurchases()->exists()
+            || $dealer->purchases()->exists();
+
+        if ($hasTransactions) {
+            return redirect()->route('masters.dealers.index')
+                ->with('error', 'Cannot delete dealer with existing transactions or billing records.');
+        }
+
         $this->service->delete($dealer);
         return redirect()->route('masters.dealers.index')->with('success', 'Dealer deleted.');
     }

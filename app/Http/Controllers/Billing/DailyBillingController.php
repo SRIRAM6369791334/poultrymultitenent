@@ -196,15 +196,15 @@ class DailyBillingController extends Controller
         return back()->with('success', 'Daily bill generated successfully.');
     }
 
-    public function show(DailyBill $bill): View
+    public function show(DailyBill $daily): View
     {
-        $bill->load(['dealer', 'customer', 'items']);
+        $daily->load(['dealer', 'customer', 'items']);
 
-        if ($bill->dealer_id) {
+        if ($daily->dealer_id) {
             $dayLoadEntries = DayLoadEntry::with(['batch', 'vendor', 'dailyBill'])
-                ->where('dealer_id', $bill->dealer_id)
+                ->where('dealer_id', $daily->dealer_id)
                 ->where('status', '!=', 'Cancelled')
-                ->whereHas('batch', fn($q) => $q->whereDate('billing_date', $bill->date->format('Y-m-d')))
+                ->whereHas('batch', fn($q) => $q->whereDate('billing_date', $daily->date->format('Y-m-d')))
                 ->orderBy('batch_id')
                 ->orderByRaw('CASE WHEN sort_order IS NOT NULL THEN 0 ELSE 1 END')
                 ->orderBy('sort_order', 'asc')
@@ -212,21 +212,21 @@ class DailyBillingController extends Controller
                 ->get();
 
             $entryIds = $dayLoadEntries->pluck('id')->toArray();
-            $allPayments = \App\Models\DealerPayment::where('dealer_id', $bill->dealer_id)
-                ->where(function($q) use ($bill, $entryIds) {
-                    $q->whereDate('date', $bill->date->format('Y-m-d'))
+            $allPayments = \App\Models\DealerPayment::where('dealer_id', $daily->dealer_id)
+                ->where(function($q) use ($daily, $entryIds) {
+                    $q->whereDate('date', $daily->date->format('Y-m-d'))
                       ->orWhereIn('day_load_entry_id', $entryIds)
-                      ->orWhere('invoice_id', $bill->id);
+                      ->orWhere('invoice_id', $daily->id);
                 })
                 ->orderBy('date')
                 ->orderBy('id')
                 ->get();
-        } elseif ($bill->customer_id) {
+        } elseif ($daily->customer_id) {
             $dayLoadEntries = collect();
-            $allPayments = \App\Models\CustomerPayment::where('customer_id', $bill->customer_id)
-                ->where(function($q) use ($bill) {
-                    $q->whereDate('date', $bill->date->format('Y-m-d'))
-                      ->orWhere('notes', 'like', "%{$bill->invoice_no}%");
+            $allPayments = \App\Models\CustomerPayment::where('customer_id', $daily->customer_id)
+                ->where(function($q) use ($daily) {
+                    $q->whereDate('date', $daily->date->format('Y-m-d'))
+                      ->orWhere('notes', 'like', "%{$daily->invoice_no}%");
                 })
                 ->orderBy('date')
                 ->orderBy('id')
@@ -245,12 +245,12 @@ class DailyBillingController extends Controller
         $dayLoadTotal = round($dayLoadEntries->sum(
             fn($e) => (float) $e->bird_weight * (float) $e->customer_rate
         ), 2);
-        if ($dayLoadTotal == 0 && (float)$bill->amount > 0) {
-            $dayLoadTotal = (float)$bill->amount;
+        if ($dayLoadTotal == 0 && (float)$daily->amount > 0) {
+            $dayLoadTotal = (float)$daily->amount;
         }
 
-        $prevOutstanding = (float)($bill->previous_outstanding ?? 0);
-        $discountAmount = (float)($bill->discount_amount ?? 0);
+        $prevOutstanding = (float)($daily->previous_outstanding ?? 0);
+        $discountAmount = (float)($daily->discount_amount ?? 0);
         $netInvoiceAmount = max(0, round($dayLoadTotal - $discountAmount, 2));
         $totalPayable = round($prevOutstanding + $netInvoiceAmount, 2);
 
@@ -258,23 +258,25 @@ class DailyBillingController extends Controller
         $remainingDue = max(0, round($totalPayable - $totalPaid, 2));
         $transfersOut = \App\Models\EntryAdjustmentLog::with(['resultingEntry.dealer'])
             ->whereIn('action_type', ['Transfer', 'Split'])
-            ->whereHas('entry', function($q) use ($bill) {
-                $q->where('dealer_id', $bill->dealer_id)
-                  ->whereHas('batch', fn($q2) => $q2->whereDate('billing_date', $bill->date->format('Y-m-d')));
+            ->whereHas('entry', function($q) use ($daily) {
+                $q->where('dealer_id', $daily->dealer_id)
+                  ->whereHas('batch', fn($q2) => $q2->whereDate('billing_date', $daily->date->format('Y-m-d')));
             })
             ->get();
 
         $transfersIn = \App\Models\EntryAdjustmentLog::with(['entry.dealer'])
             ->whereIn('action_type', ['Transfer', 'Split'])
-            ->whereHas('resultingEntry', function($q) use ($bill) {
-                $q->where('dealer_id', $bill->dealer_id)
-                  ->whereHas('batch', fn($q2) => $q2->whereDate('billing_date', $bill->date->format('Y-m-d')));
+            ->whereHas('resultingEntry', function($q) use ($daily) {
+                $q->where('dealer_id', $daily->dealer_id)
+                  ->whereHas('batch', fn($q2) => $q2->whereDate('billing_date', $daily->date->format('Y-m-d')));
             })
             ->get();
 
+        $bill = $daily;
+
         return view('billing.invoice', array_merge(
-            compact('bill', 'dayLoadEntries', 'allPayments', 'dayLoadTotal', 'totalPaid', 'remainingDue', 'prevOutstanding', 'totalPayable', 'netInvoiceAmount', 'transfersOut', 'transfersIn'),
-            ['weekly' => $bill]
+            compact('daily', 'bill', 'dayLoadEntries', 'allPayments', 'dayLoadTotal', 'totalPaid', 'remainingDue', 'prevOutstanding', 'totalPayable', 'netInvoiceAmount', 'transfersOut', 'transfersIn'),
+            ['weekly' => $daily]
         ));
     }
 

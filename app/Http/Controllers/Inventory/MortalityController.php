@@ -44,6 +44,7 @@ class MortalityController extends Controller
             
             // Validation: Cannot have more mortality than current count
             if ($batch->current_count < $validated['count']) {
+                DB::rollBack();
                 return back()->with('error', "Mortality count ({$validated['count']}) cannot exceed current bird count ({$batch->current_count}) for this batch.")->withInput();
             }
 
@@ -52,8 +53,8 @@ class MortalityController extends Controller
                 'date' => $validated['date'],
                 'batch_id' => $validated['batch_id'],
                 'count' => $validated['count'],
-                'reason' => $validated['reason'],
-                'remarks' => $validated['remarks'],
+                'reason' => $validated['reason'] ?? null,
+                'remarks' => $validated['remarks'] ?? null,
                 'created_by' => auth()->id()
             ]);
 

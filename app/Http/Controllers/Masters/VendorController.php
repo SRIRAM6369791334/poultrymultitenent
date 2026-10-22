@@ -153,6 +153,18 @@ class VendorController extends Controller
 
     public function destroy(Vendor $vendor): RedirectResponse
     {
+        $hasTransactions = $vendor->dayLoadEntries()->exists()
+            || $vendor->vendorPayments()->exists()
+            || $vendor->purchases()->exists()
+            || (method_exists($vendor, 'vendorAdvances') && $vendor->vendorAdvances()->exists())
+            || (method_exists($vendor, 'advances') && $vendor->advances()->exists())
+            || \App\Models\VendorAdvance::where('vendor_id', $vendor->id)->exists();
+
+        if ($hasTransactions) {
+            return redirect()->route('masters.vendors.index')
+                ->with('error', 'Cannot delete vendor with existing transactions or purchases.');
+        }
+
         $this->service->delete($vendor);
         return redirect()->route('masters.vendors.index')->with('success', 'Vendor deleted.');
     }
